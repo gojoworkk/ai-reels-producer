@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Python-бэкенд и локальный PostgreSQL
+    "backend/**",
+    ".tools/**",
   ]),
 ]);
 

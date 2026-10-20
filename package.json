@@ -3,20 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "next dev",
+    "dev:api": "node scripts/py.mjs -m uvicorn app.main:app --app-dir backend --port 8000 --reload --reload-dir backend/app",
+    "setup": "node scripts/setup.mjs",
+    "db:start": "node scripts/py.mjs backend/scripts/pg.py start",
+    "db:stop": "node scripts/py.mjs backend/scripts/pg.py stop",
+    "db:seed": "node scripts/py.mjs -m app.seed",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "seed:demo": "node scripts/seed-demo.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.135.0",
     "lucide-react": "^1.60.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "server-only": "^0.0.1",
-    "zod": "^4.6.7"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

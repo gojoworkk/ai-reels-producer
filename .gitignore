@@ -41,5 +41,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local data
-/data
+
+# Python-бэкенд, локальный PostgreSQL, файловое хранилище
+__pycache__/
+/backend/.venv
+/backend/.env
+/backend/storage
+/.tools

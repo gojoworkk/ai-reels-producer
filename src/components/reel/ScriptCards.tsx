@@ -2,63 +2,78 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import { Camera, Check, ChevronRight, Loader2, MessageSquare, Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
-import { addComment, deleteComment, generateScript, saveScript, type ActionResult } from "@/app/actions";
+import { addComment, deleteComment, saveScript } from "@/app/actions";
 import { timeAgo } from "@/lib/time";
-import type { Comment, Script, ScriptBlock, SectionKey } from "@/lib/types";
+import type { Comment, Script, ScriptBlock, ScriptPatch, SectionKey } from "@/lib/types";
+import { ProgressBar } from "../JobProgress";
 import { Card, btnSmall, btnSmallGhost, btnSmallSolid, btnSolid } from "../ui";
+import { useReelJob } from "./ReelJob";
+
+type SaveResult = { ok: true } | { ok: false; error: string };
 
 type Props = {
   reelId: string;
-  script?: Script;
-  discussion: Comment[];
+  script: Script | null;
+  comments: Comment[];
   caption: string;
-  transcript?: string;
-  canGenerate: boolean;
+  transcript: string | null;
 };
 
-export function ScriptCards({ reelId, script, discussion, caption, transcript, canGenerate }: Props) {
+export function ScriptCards({ reelId, script, comments, caption, transcript }: Props) {
+  const { job, busy, error } = useReelJob();
   const original = <OriginalCard caption={caption} transcript={transcript} />;
 
   if (!script) {
     return (
       <div className="space-y-4">
-        <EmptyScript reelId={reelId} canGenerate={canGenerate} />
+        <EmptyScript />
         {original}
       </div>
     );
   }
 
-  const save = (patch: Partial<Script>) => saveScript(reelId, { ...script, ...patch });
+  const save = async (patch: ScriptPatch): Promise<SaveResult> => {
+    const res = await saveScript(reelId, patch);
+    return res.ok ? { ok: true } : res;
+  };
   const thread = (section: SectionKey) => (
     <Comments
       reelId={reelId}
       section={section}
       aiNote={script.notes?.[section]}
-      aiAt={script.generatedAt}
-      comments={discussion.filter((c) => c.section === section)}
+      aiAt={script.generated_at}
+      comments={comments.filter((c) => c.section === section)}
     />
   );
 
   return (
     <div className="space-y-4">
+      {busy && job && (
+        <Card className="px-5 py-4">
+          <p className="mb-2 text-[13px] font-semibold">Remix: пишем новую версию сценария</p>
+          <ProgressBar job={job} />
+        </Card>
+      )}
+      {error && !busy && <Card className="px-5 py-3 text-[13px] text-danger">{error}</Card>}
+
       <EditableCard
         title="Идея"
         subtitle="Разбор оригинала"
-        value={{ idea: script.idea, whyItWorks: script.whyItWorks }}
-        onSave={save}
+        value={{ idea: script.idea, why_it_works: script.why_it_works }}
+        onSave={(v) => save(v)}
         view={(v) => (
           <div className="space-y-3">
             <p>{v.idea}</p>
             <p className="text-muted">
               <span className="font-semibold text-fg">Почему залетело. </span>
-              {v.whyItWorks}
+              {v.why_it_works}
             </p>
           </div>
         )}
         edit={(v, set) => (
           <div className="space-y-3">
             <Area label="Идея" value={v.idea} onChange={(idea) => set({ ...v, idea })} />
-            <Area label="Почему залетело" value={v.whyItWorks} onChange={(whyItWorks) => set({ ...v, whyItWorks })} />
+            <Area label="Почему залетело" value={v.why_it_works} onChange={(why_it_works) => set({ ...v, why_it_works })} />
           </div>
         )}
       />
@@ -130,7 +145,7 @@ export function ScriptCards({ reelId, script, discussion, caption, transcript, c
       <EditableCard
         title="Описание к посту"
         subtitle="Редактируемый блок"
-        value={{ caption: script.caption, tags: (script.tags ?? []).join(", ") }}
+        value={{ caption: script.caption, tags: script.tags.join(", ") }}
         onSave={(v) =>
           save({
             caption: v.caption,
@@ -152,8 +167,8 @@ export function ScriptCards({ reelId, script, discussion, caption, transcript, c
       {original}
 
       <p className="px-1 text-[11px] text-faint" suppressHydrationWarning>
-        Язык оригинала: {script.sourceLanguage} · создан {timeAgo(script.generatedAt)}
-        {script.editedAt && ` · изменён ${timeAgo(script.editedAt)}`}
+        Версия {script.version} · язык оригинала: {script.source_language} · создан {timeAgo(script.generated_at)}
+        {script.edited_at && ` · изменён ${timeAgo(script.edited_at)}`}
       </p>
     </div>
   );
@@ -171,7 +186,7 @@ function EditableCard<T>({
   title: string;
   subtitle: string;
   value: T;
-  onSave: (v: T) => Promise<ActionResult>;
+  onSave: (v: T) => Promise<SaveResult>;
   view: (v: T) => ReactNode;
   edit: (v: T, set: (v: T) => void) => ReactNode;
   footer?: ReactNode;
@@ -179,10 +194,10 @@ function EditableCard<T>({
   const [draft, setDraft] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSave] = useTransition();
-  const editing = draft !== null;
 
   function save() {
     if (draft === null) return;
+    setError(null);
     startSave(async () => {
       const res = await onSave(draft);
       if (res.ok) setDraft(null);
@@ -197,7 +212,7 @@ function EditableCard<T>({
           <h2 className="text-[15px] font-semibold">{title}</h2>
           <p className="mt-0.5 text-[11px] text-faint">{subtitle}</p>
         </div>
-        {editing ? (
+        {draft !== null ? (
           <div className="flex gap-1.5">
             <button type="button" className={btnSmallGhost} onClick={() => setDraft(null)} disabled={saving}>
               <X size={12} />
@@ -218,7 +233,7 @@ function EditableCard<T>({
 
       <div
         className={`mx-5 mt-4 mb-5 rounded-lg border px-4 py-3.5 text-[14px] leading-relaxed ${
-          editing ? "border-line-strong" : "border-line"
+          draft !== null ? "border-line-strong" : "border-line"
         }`}
       >
         {draft !== null ? edit(draft, setDraft) : view(value)}
@@ -261,7 +276,7 @@ function BlockEdit({
   return (
     <div className="space-y-2.5">
       {withLabel && (
-        <Area label="Заголовок пункта" value={block.label ?? ""} onChange={(label) => onChange({ ...block, label })} bold />
+        <Area label="Заголовок пункта" value={block.label} onChange={(label) => onChange({ ...block, label })} bold />
       )}
       <Area label="Текст" value={block.text} onChange={(text) => onChange({ ...block, text })} />
       <Area label="В кадре" value={block.visual} onChange={(visual) => onChange({ ...block, visual })} small />
@@ -320,10 +335,11 @@ function Comments({
       return "";
     }
   });
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const all = [
-    ...(aiNote ? [{ id: "ai", text: aiNote, author: "ИИ-продюсер", createdAt: aiAt, section }] : []),
+  const all: Comment[] = [
+    ...(aiNote ? [{ id: "ai", text: aiNote, author: "ИИ-продюсер", created_at: aiAt, section }] : []),
     ...comments,
   ];
 
@@ -334,9 +350,11 @@ function Comments({
     try {
       localStorage.setItem(AUTHOR_KEY, name);
     } catch {}
+    setError(null);
     startTransition(async () => {
       const res = await addComment(reelId, section, text, name);
       if (res.ok) setText("");
+      else setError(res.error);
     });
   }
 
@@ -361,7 +379,7 @@ function Comments({
                   удалить
                 </button>
               )}
-              <span suppressHydrationWarning>{timeAgo(c.createdAt)}</span>
+              <span suppressHydrationWarning>{timeAgo(c.created_at)}</span>
             </span>
           </div>
         </div>
@@ -389,45 +407,35 @@ function Comments({
           </button>
         )}
       </form>
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
   );
 }
 
-function EmptyScript({ reelId, canGenerate }: { reelId: string; canGenerate: boolean }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+function EmptyScript() {
+  const { job, busy, error, start } = useReelJob();
 
   return (
     <Card className="px-6 py-12 text-center">
       <Sparkles size={22} strokeWidth={1.6} className="mx-auto text-faint" />
       <p className="mt-3 text-[15px] font-semibold">Сценария пока нет</p>
       <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted">
-        {pending
-          ? "Достаём транскрипт и адаптируем текст на русский. Это займёт около минуты."
-          : "Достанем транскрипт рилса и напишем сценарий на русском: хук, скрипт и призыв к действию."}
+        Достанем транскрипт рилса и напишем сценарий на русском: хук, скрипт и призыв к действию.
       </p>
-      <button
-        type="button"
-        className={`${btnSolid} mt-5`}
-        disabled={pending || !canGenerate}
-        onClick={() =>
-          startTransition(async () => {
-            setError(null);
-            const res = await generateScript(reelId);
-            if (!res.ok) setError(res.error);
-          })
-        }
-      >
-        {pending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-        {pending ? "Пишем сценарий…" : "Создать сценарий"}
-      </button>
-      {!canGenerate && <p className="mt-3 text-xs text-danger">Добавьте ANTHROPIC_API_KEY в .env.local</p>}
-      {error && <p className="mt-3 text-xs text-danger">{error}</p>}
+      {busy && job ? (
+        <ProgressBar job={job} className="mx-auto mt-5 max-w-sm text-left" />
+      ) : (
+        <button type="button" className={`${btnSolid} mt-5`} disabled={busy} onClick={start}>
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          {busy ? "Запускаем…" : "Создать сценарий"}
+        </button>
+      )}
+      {error && !busy && <p className="mx-auto mt-3 max-w-sm text-xs text-danger">{error}</p>}
     </Card>
   );
 }
 
-function OriginalCard({ caption, transcript }: { caption: string; transcript?: string }) {
+function OriginalCard({ caption, transcript }: { caption: string; transcript: string | null }) {
   return (
     <Card>
       <details className="group">
