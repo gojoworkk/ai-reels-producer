@@ -1,6 +1,7 @@
 """Файловое хранилище: обложки, видео, кадры-превью, экспорты и временные файлы."""
 
 import subprocess
+import time
 from pathlib import Path
 
 import httpx
@@ -44,15 +45,24 @@ def _register(session: Session, reel_id: str | None, kind: MediaKind, rel: str, 
     return media
 
 
-def _download(url: str, dest: Path) -> None:
+def _download(url: str, dest: Path, attempts: int = 3) -> None:
     tmp = root() / FOLDERS[MediaKind.tmp] / f"{dest.name}.part"
-    # Instagram CDN отдаёт файлы без Referer
-    with httpx.stream("GET", url, timeout=120, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}) as res:
-        res.raise_for_status()
-        with tmp.open("wb") as f:
-            for chunk in res.iter_bytes():
-                f.write(chunk)
-    tmp.replace(dest)
+    for attempt in range(1, attempts + 1):
+        try:
+            # Instagram CDN отдаёт файлы без Referer
+            with httpx.stream("GET", url, timeout=120, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}) as res:
+                res.raise_for_status()
+                with tmp.open("wb") as f:
+                    for chunk in res.iter_bytes():
+                        f.write(chunk)
+            tmp.replace(dest)
+            return
+        except httpx.TransportError:
+            # Сетевые сбои (DNS, обрыв соединения) бывают разовыми — пробуем ещё раз
+            tmp.unlink(missing_ok=True)
+            if attempt == attempts:
+                raise
+            time.sleep(2 * attempt)
 
 
 def save_cover(session: Session, reel: Reel) -> None:

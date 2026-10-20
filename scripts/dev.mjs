@@ -2,10 +2,10 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { killTree, spawnPython } from "./py.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
-const win = process.platform === "win32";
-const python = path.join(root, "backend", ".venv", win ? "Scripts/python.exe" : "bin/python");
+const python = path.join(root, "backend", ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
 
 if (!existsSync(python)) {
   console.error("Бэкенд не установлен. Выполните: npm run setup");
@@ -16,10 +16,9 @@ const db = spawnSync(python, [path.join(root, "backend/scripts/pg.py"), "start"]
 if (db.status !== 0) process.exit(db.status ?? 1);
 
 const procs = [
-  ["api", python, ["-m", "uvicorn", "app.main:app", "--app-dir", "backend", "--port", "8000", "--reload", "--reload-dir", "backend/app"]],
-  ["web", process.execPath, [path.join(root, "node_modules/next/dist/bin/next"), "dev"]],
-].map(([name, cmd, args]) => {
-  const child = spawn(cmd, args, { cwd: root, env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+  ["api", spawnPython(["-m", "uvicorn", "app.main:app", "--app-dir", "backend", "--port", "8000", "--reload", "--reload-dir", "backend/app"])],
+  ["web", spawn(process.execPath, [path.join(root, "node_modules/next/dist/bin/next"), "dev"], { cwd: root })],
+].map(([name, child]) => {
   const prefix = (line) => `[${name}] ${line}`;
   for (const stream of [child.stdout, child.stderr]) {
     stream.on("data", (buf) => process.stdout.write(buf.toString().split(/\r?\n/).filter(Boolean).map(prefix).join("\n") + "\n"));
@@ -35,7 +34,8 @@ let stopping = false;
 function shutdown() {
   if (stopping) return;
   stopping = true;
-  for (const p of procs) p.kill();
+  // uvicorn --reload и next dev запускают свои дочерние процессы — гасим всё дерево
+  for (const p of procs) killTree(p);
   // PostgreSQL оставляем работать: следующий запуск будет быстрее. Остановить: npm run db:stop
   setTimeout(() => process.exit(0), 500);
 }

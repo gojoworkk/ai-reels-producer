@@ -11,7 +11,7 @@ from ..db import session_scope
 from ..jobs import Progress, log_event
 from ..models import Competitor, Reel, ReelStatus, Script, ScriptBlock, Section, Tag, now
 from . import apify, storage
-from .scriptwriter import ScriptDraft, write_script
+from .scriptwriter import ScriptDraft, ScriptwriterError, write_script
 
 log = logging.getLogger("reels.pipeline")
 
@@ -114,6 +114,10 @@ def _apply_draft(session: Session, reel: Reel, draft: ScriptDraft) -> None:
 
 
 def generate_script(reel_id: str, progress: Progress) -> str:
+    # Проверяем ключ Claude до Apify: иначе оплатим транскрипт, который некому обработать
+    if not get_settings().anthropic_api_key:
+        raise ScriptwriterError("Не задан ANTHROPIC_API_KEY в backend/.env")
+
     with session_scope() as s:
         reel = s.get(Reel, reel_id)
         reel.status = ReelStatus.scripting
