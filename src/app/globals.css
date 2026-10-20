@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/* Палитра в духе Notion: чёрно-белая, с тёплым серым */
+:root {
+  --bg: #ffffff;
+  --sidebar: #f7f7f5;
+  --fg: #37352f;
+  --fg-muted: rgba(55, 53, 47, 0.65);
+  --fg-faint: rgba(55, 53, 47, 0.45);
+  --border: rgba(55, 53, 47, 0.09);
+  --border-strong: rgba(55, 53, 47, 0.16);
+  --hover: rgba(55, 53, 47, 0.06);
+  --active: rgba(55, 53, 47, 0.1);
+  --callout: #f1f1ef;
+  --accent: #191919;
+  --accent-fg: #ffffff;
+  --danger: #c4554d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191919;
+    --sidebar: #202020;
+    --fg: rgba(255, 255, 255, 0.86);
+    --fg-muted: rgba(255, 255, 255, 0.55);
+    --fg-faint: rgba(255, 255, 255, 0.35);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --hover: rgba(255, 255, 255, 0.055);
+    --active: rgba(255, 255, 255, 0.09);
+    --callout: #252525;
+    --accent: #f5f5f4;
+    --accent-fg: #191919;
+    --danger: #e0786f;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-faint: var(--fg-faint);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-callout: var(--callout);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-inter), ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(35, 131, 226, 0.28);
+}
+
+textarea {
+  field-sizing: content;
+}
