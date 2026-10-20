@@ -1,23 +1,22 @@
 import { Suspense } from "react";
-import { Clapperboard } from "lucide-react";
+import Link from "next/link";
 import { NavLinks, SidebarNav } from "./SidebarNav";
 
 export function Sidebar() {
   return (
-    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-line bg-sidebar max-md:w-14">
-      <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded bg-accent text-accent-fg">
-          <Clapperboard size={14} strokeWidth={2.2} />
-        </span>
-        <span className="truncate text-sm font-semibold max-md:hidden">AI Reels Producer</span>
-      </div>
+    <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-line bg-sidebar max-md:w-14">
+      <Link href="/" className="block px-6 pt-6 pb-2 max-md:px-3">
+        <span className="block text-[17px] leading-none font-extrabold tracking-tight max-md:hidden">ИИ РИЛС</span>
+        <span className="mt-1 block text-[10px] font-medium tracking-[0.14em] text-muted max-md:hidden">ПРОДЮСЕР</span>
+        <span className="hidden text-[15px] font-extrabold md:hidden max-md:block">ИР</span>
+      </Link>
 
       {/* Активный пункт зависит от URL, поэтому подсветка догружается после статической оболочки */}
       <Suspense fallback={<NavLinks pathname={null} />}>
         <SidebarNav />
       </Suspense>
 
-      <div className="mt-auto px-3 pb-3 text-xs text-faint max-md:hidden">Найти → переписать → снять</div>
+      <div className="mt-auto px-6 pb-5 text-[11px] text-faint max-md:hidden">Найти → переписать → снять</div>
     </aside>
   );
 }

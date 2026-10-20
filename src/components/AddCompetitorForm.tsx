@@ -27,7 +27,7 @@ export function AddCompetitorForm() {
   return (
     <form onSubmit={submit}>
       <div className="flex gap-2 max-sm:flex-col">
-        <label className="flex h-9 flex-1 items-center gap-2 rounded-md border border-line-strong px-2.5 focus-within:border-fg/40">
+        <label className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-line-strong bg-card px-2.5 focus-within:border-fg/40">
           <AtSign size={16} className="shrink-0 text-faint" />
           <input
             value={value}
@@ -40,13 +40,13 @@ export function AddCompetitorForm() {
         <button
           type="submit"
           disabled={pending || !value.trim()}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent px-3.5 text-sm font-medium text-accent-fg transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-accent px-4 text-[13px] font-semibold text-accent-fg transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {pending ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
           {pending ? "Скачиваем рилсы…" : "Добавить"}
         </button>
       </div>
-      <p className={`mt-2 min-h-5 text-sm ${status ? (status.ok ? "text-fg" : "text-danger") : "text-faint"}`}>
+      <p className={`mt-2 min-h-5 text-xs ${status ? (status.ok ? "text-fg" : "text-danger") : "text-faint"}`}>
         {pending ? "Обычно это занимает 30–90 секунд." : status?.text ?? "Берём последние 20 рилсов, чтобы не тратить лимиты."}
       </p>
     </form>

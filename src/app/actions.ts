@@ -1,10 +1,11 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { fetchLatestReels, fetchReelTranscript, normalizeUsername, type RawReel } from "@/lib/apify";
 import { readDb, updateDb } from "@/lib/db";
 import { writeScript } from "@/lib/scriptwriter";
-import type { Reel, Script } from "@/lib/types";
+import type { Reel, Script, SectionKey } from "@/lib/types";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -135,4 +136,48 @@ export async function saveScript(reelId: string, script: Script): Promise<Action
   if (!found) return { ok: false, error: "Рилс не найден." };
   refresh();
   return { ok: true };
+}
+
+export async function addComment(
+  reelId: string,
+  section: SectionKey,
+  text: string,
+  author: string,
+): Promise<ActionResult> {
+  const body = text.trim();
+  if (!body) return { ok: false, error: "Пустой комментарий." };
+  const found = await updateDb((db) => {
+    const reel = db.reels.find((r) => r.id === reelId);
+    if (!reel) return false;
+    reel.discussion = [
+      ...(reel.discussion ?? []),
+      {
+        id: crypto.randomUUID(),
+        section,
+        text: body.slice(0, 2000),
+        author: author.trim().slice(0, 40) || "Я",
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    return true;
+  });
+  if (!found) return { ok: false, error: "Рилс не найден." };
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteComment(reelId: string, commentId: string): Promise<ActionResult> {
+  await updateDb((db) => {
+    const reel = db.reels.find((r) => r.id === reelId);
+    if (reel) reel.discussion = reel.discussion?.filter((c) => c.id !== commentId);
+  });
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteReel(reelId: string): Promise<void> {
+  await updateDb((db) => {
+    db.reels = db.reels.filter((r) => r.id !== reelId);
+  });
+  redirect("/");
 }

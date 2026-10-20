@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
-/* Палитра в духе Notion: чёрно-белая, с тёплым серым */
+/* Палитра в духе Notion: чёрно-белая, карточки на светло-сером фоне */
 :root {
-  --bg: #ffffff;
-  --sidebar: #f7f7f5;
-  --fg: #37352f;
-  --fg-muted: rgba(55, 53, 47, 0.65);
-  --fg-faint: rgba(55, 53, 47, 0.45);
-  --border: rgba(55, 53, 47, 0.09);
-  --border-strong: rgba(55, 53, 47, 0.16);
-  --hover: rgba(55, 53, 47, 0.06);
-  --active: rgba(55, 53, 47, 0.1);
-  --callout: #f1f1ef;
+  --bg: #fafaf9;
+  --card: #ffffff;
+  --sidebar: #fafaf9;
+  --fg: #191919;
+  --fg-muted: rgba(25, 25, 25, 0.62);
+  --fg-faint: rgba(25, 25, 25, 0.42);
+  --border: rgba(25, 25, 25, 0.08);
+  --border-strong: rgba(25, 25, 25, 0.14);
+  --hover: rgba(25, 25, 25, 0.045);
+  --active: rgba(25, 25, 25, 0.07);
+  --callout: #f4f4f3;
   --accent: #191919;
   --accent-fg: #ffffff;
   --danger: #c4554d;
+  --shadow: 0 1px 2px rgba(15, 15, 15, 0.04), 0 2px 8px rgba(15, 15, 15, 0.03);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #191919;
-    --sidebar: #202020;
+    --card: #202020;
+    --sidebar: #1c1c1c;
     --fg: rgba(255, 255, 255, 0.86);
     --fg-muted: rgba(255, 255, 255, 0.55);
     --fg-faint: rgba(255, 255, 255, 0.35);
@@ -32,11 +35,14 @@
     --accent: #f5f5f4;
     --accent-fg: #191919;
     --danger: #e0786f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-card: var(--card);
+  --shadow-card: var(--shadow);
   --color-sidebar: var(--sidebar);
   --color-fg: var(--fg);
   --color-muted: var(--fg-muted);

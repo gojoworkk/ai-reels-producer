@@ -11,14 +11,26 @@ const Block = z.object({
   visual: z.string().describe("Что показывать в кадре, коротко"),
 });
 
+const BodyBlock = Block.extend({
+  label: z.string().describe("Короткий заголовок пункта, 2–6 слов, например «Ошибка №1 — скучный хук»"),
+});
+
 const ScriptSchema = z.object({
   title: z.string().describe("Короткое рабочее название ролика, до 60 символов"),
   idea: z.string().describe("Суть ролика в 1–2 предложениях"),
   whyItWorks: z.string().describe("Почему рилс залетел: механика удержания, эмоция, триггер"),
   hook: Block.describe("Хук — первые 1–3 секунды"),
-  body: z.array(Block).describe("Основная часть, 2–6 смысловых блоков по порядку"),
+  body: z.array(BodyBlock).describe("Основная часть, 2–6 смысловых блоков по порядку"),
   cta: Block.describe("Призыв к действию в конце"),
   caption: z.string().describe("Описание под пост на русском, с 3–5 хэштегами"),
+  tags: z.array(z.string()).describe("2–4 коротких тега темы ролика на русском, одно-два слова, с заглавной буквы"),
+  notes: z
+    .object({
+      hook: z.string(),
+      body: z.string(),
+      cta: z.string(),
+    })
+    .describe("Короткий комментарий продюсера к каждому блоку: что в нём сильно и что можно усилить, 1–2 предложения"),
   sourceLanguage: z.string().describe("Язык оригинала, например «английский»"),
 });
 

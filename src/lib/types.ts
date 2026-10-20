@@ -1,7 +1,10 @@
 export type ScriptBlock = {
+  label?: string; // короткий жирный заголовок пункта, например «Ошибка №1 — скучный хук»
   text: string;
   visual: string;
 };
+
+export type SectionKey = "hook" | "body" | "cta";
 
 export type Script = {
   title: string;
@@ -11,9 +14,20 @@ export type Script = {
   body: ScriptBlock[];
   cta: ScriptBlock;
   caption: string;
+  tags?: string[];
+  // Короткие комментарии ИИ-продюсера к каждому блоку
+  notes?: Partial<Record<SectionKey, string>>;
   sourceLanguage: string;
   generatedAt: string;
   editedAt?: string;
+};
+
+export type Comment = {
+  id: string;
+  section: SectionKey;
+  text: string;
+  author: string;
+  createdAt: string;
 };
 
 export type Reel = {
@@ -33,6 +47,7 @@ export type Reel = {
   transcript?: string;
   transcriptFetched?: boolean;
   script?: Script;
+  discussion?: Comment[];
   fetchedAt: string;
 };
 
