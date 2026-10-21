@@ -1,24 +1,17 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { Sidebar } from "@/components/Sidebar";
 import "./globals.css";
+import Sidebar from "@/components/Sidebar";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "cyrillic"],
-});
+export const metadata: Metadata = { title: "Reels Finder" };
 
-export const metadata: Metadata = {
-  title: "AI Reels Producer",
-  description: "Находит взлетевшие рилсы конкурентов и превращает их в сценарии на русском",
-};
-
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${inter.variable} h-full`}>
-      <body className="flex h-full min-h-screen">
-        <Sidebar />
-        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+    <html lang="ru">
+      <body>
+        <div className="shell">
+          <Sidebar />
+          <main className="main">{children}</main>
+        </div>
       </body>
     </html>
   );

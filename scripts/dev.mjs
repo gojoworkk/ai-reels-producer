@@ -1,45 +1,25 @@
-// npm run dev — поднимает PostgreSQL, API (FastAPI) и front-end (Next.js) одной командой.
+// Одна команда `npm run dev`: готовит Python при первом запуске и поднимает сервер и сайт
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import path from "node:path";
-import { killTree, spawnPython } from "./py.mjs";
+import { resolve } from "node:path";
 
-const root = path.resolve(import.meta.dirname, "..");
-const python = path.join(root, "backend", ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
+const win = process.platform === "win32";
+const py = win ? ".venv\\Scripts\\python.exe" : ".venv/bin/python";
 
-if (!existsSync(python)) {
-  console.error("Бэкенд не установлен. Выполните: npm run setup");
-  process.exit(1);
+if (!existsSync(py)) {
+  console.log("Первый запуск: ставлю Python-зависимости...");
+  spawnSync(win ? "py" : "python3", ["-m", "venv", ".venv"], { stdio: "inherit" });
+  spawnSync(py, ["-m", "pip", "install", "-q", "-r", "backend/requirements.txt"], { stdio: "inherit" });
 }
 
-const db = spawnSync(python, [path.join(root, "backend/scripts/pg.py"), "start"], { stdio: "inherit" });
-if (db.status !== 0) process.exit(db.status ?? 1);
-
-const procs = [
-  ["api", spawnPython(["-m", "uvicorn", "app.main:app", "--app-dir", "backend", "--port", "8000", "--reload", "--reload-dir", "backend/app"])],
-  ["web", spawn(process.execPath, [path.join(root, "node_modules/next/dist/bin/next"), "dev"], { cwd: root })],
-].map(([name, child]) => {
-  const prefix = (line) => `[${name}] ${line}`;
-  for (const stream of [child.stdout, child.stderr]) {
-    stream.on("data", (buf) => process.stdout.write(buf.toString().split(/\r?\n/).filter(Boolean).map(prefix).join("\n") + "\n"));
-  }
-  child.on("exit", (code) => {
-    console.log(prefix(`остановлен (код ${code})`));
-    shutdown();
-  });
-  return child;
+const api = spawn(resolve(py), ["-m", "uvicorn", "app.main:app", "--reload", "--port", "8000"], {
+  stdio: "inherit",
+  cwd: "backend",
 });
+const web = spawn(win ? "npx.cmd" : "npx", ["next", "dev", "--port", "3000"], { stdio: "inherit", shell: win });
 
-let stopping = false;
-function shutdown() {
-  if (stopping) return;
-  stopping = true;
-  // uvicorn --reload и next dev запускают свои дочерние процессы — гасим всё дерево
-  for (const p of procs) killTree(p);
-  // PostgreSQL оставляем работать: следующий запуск будет быстрее. Остановить: npm run db:stop
-  setTimeout(() => process.exit(0), 500);
-}
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-console.log("\n  Сайт:  http://localhost:3000\n  API:   http://localhost:8000/docs\n");
+const stop = () => { api.kill(); web.kill(); process.exit(); };
+process.on("SIGINT", stop);
+process.on("SIGTERM", stop);
+api.on("exit", stop);
+web.on("exit", stop);
